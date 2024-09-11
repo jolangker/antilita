@@ -1,0 +1,1 @@
+export { default as useWordFinder } from './word-finder'
