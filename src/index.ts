@@ -24,6 +24,10 @@ client.on('messageCreate', async (msg) => {
     if (!keyword) return channel?.send('lu blm mulai kocak')
   } else if (command.includes('find')) {
     keyword = msg.cleanContent.split(' ')[1]
+  } else if (command.includes('info')) {
+    const wordsInfo = await wf.checkWordBanks()
+    channel?.send(`you have ${wordsInfo.count} words!`)
+    return
   } else return
   
   if (!keyword) return channel?.send('lu blm masukin textnya kocak')

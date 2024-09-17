@@ -21,9 +21,13 @@ export default class WordFinder {
     return url
   }
 
+  async getWordBanks () {
+    return (await fs.readFile('./src/data/words.txt', 'utf-8')).split(',')
+  }
+
   async findWords (input: string) {
     // search in cached first
-    const cachedWords = (await fs.readFile('./src/data/words.txt', 'utf-8')).split(',')
+    const cachedWords = await this.getWordBanks()
     const filteredWords = cachedWords.filter((word) => {
       return word.startsWith(input)
     })
@@ -91,5 +95,14 @@ export default class WordFinder {
     })
 
     return hardest ?? this.getLongestWord(input)
+  }
+
+  async checkWordBanks () {
+    const words = await this.getWordBanks()
+
+    return {
+      words,
+      count: words.length
+    }
   }
 }
