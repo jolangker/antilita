@@ -9,7 +9,7 @@ export default class WordFinder {
       op: '4',
       type: 'r',
       mod: 'dictionary',
-      p: '1',
+      p: page,
       srch: 'Cadr',
     }
 
