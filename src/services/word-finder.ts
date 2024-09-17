@@ -1,4 +1,6 @@
 import puppeteer from "puppeteer"
+import { storeWords } from "../utils"
+import fs from 'fs/promises'
 
 export default class WordFinder {
   private createURL(phrase: string) {
@@ -18,38 +20,38 @@ export default class WordFinder {
     return url
   }
 
-  cachedWords: string[] = []
-
   async findWords (input: string) {
     // search in cached first
-    // const words = this.cachedWords.filter((word) => {
-    //   return word.startsWith(input)
-    // })
-
-    // if (words.length) return words
+    const cachedWords = (await fs.readFile('./src/data/words.txt', 'utf-8')).split(',')
+    const filteredWords = cachedWords.filter((word) => {
+      return word.startsWith(input)
+    })
+    if (filteredWords.length) return filteredWords
 
     // start scrapping
     const url = this.createURL(input)
 
-    const browser = await puppeteer.launch({ headless: true })
+    const browser = await puppeteer.launch({ headless: true, })
     const page = await browser.newPage()
   
     await page.goto(url.href)
     
     const elements = await page.$$('dt');
     const textContents = await Promise.all(elements.map(element => page.evaluate(element => element.textContent, element))) as string[];
-    
     await browser.close()
 
-    this.cachedWords = [...this.cachedWords, ...textContents]
+    storeWords(textContents)
 
     return textContents
   }
 
   async getLongestWord(input: string) {
     const words = await this.findWords(input)
+    if (!words.length) return null
+
+    const maxLength = Math.max(...words.map((word) => word.length))
     
-    return !words.length ? null : words.reduce((a, b) => a.length > b.length ? a: b)
+    return words.find((word) => word.length === maxLength) as string
   }
 
   async getHardestWord (input: string) {
@@ -60,7 +62,10 @@ export default class WordFinder {
 
     const hardStartSyllables = syllables.default.split(',') as string[]
 
-    const hardest = words.find((word) => hardStartSyllables.some((syllable) => word.endsWith(syllable)))
+    const hardest = words.find((word) => {
+      console.log(word, hardStartSyllables.some((syllable) => word.endsWith(syllable)))
+      return hardStartSyllables.some((syllable) => word.endsWith(syllable))
+    })
 
     return hardest ?? this.getLongestWord(input)
   }

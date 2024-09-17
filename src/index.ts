@@ -32,7 +32,7 @@ client.on('messageCreate', async (msg) => {
   channel?.send(result ?? 'gada jir')
 
   if (result) clipboard.writeSync(result)
-  else setTimeout(() => storeSyllables(keyword), 1000)
+  else storeSyllables(keyword)
 })
 
 const getLatestKeyword = async (message: any) => {
