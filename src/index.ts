@@ -2,7 +2,7 @@ import { WordFinder } from "./services";
 import { Client  } from 'discord.js'
 import { PREFIX_COMMAND } from "./misc/constants";
 import clipboard from "clipboardy";
-import { storeSyllables } from "./utils";
+import { storeSyllables } from "./misc/utils";
 
 const wf = new WordFinder()
 

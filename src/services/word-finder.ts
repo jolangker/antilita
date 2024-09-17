@@ -1,14 +1,15 @@
 import puppeteer from "puppeteer"
-import { storeWords } from "../utils"
+import { storeWords } from "../misc/utils"
 import fs from 'fs/promises'
 
 export default class WordFinder {
-  private createURL(phrase: string) {
+  private createURL(phrase: string, page: string) {
     const url = new URL('http://kateglo.lostfocus.org/index.php')
     const query = {
       op: '4',
       type: 'r',
       mod: 'dictionary',
+      p: '1',
       srch: 'Cadr',
     }
 
@@ -29,20 +30,43 @@ export default class WordFinder {
     if (filteredWords.length) return filteredWords
 
     // start scrapping
-    const url = this.createURL(input)
-
     const browser = await puppeteer.launch({ headless: true, })
     const page = await browser.newPage()
-  
-    await page.goto(url.href)
+
+    let currentPage = 1
+    let lastPage = 1
+    let words: string[] = []
     
-    const elements = await page.$$('dt');
-    const textContents = await Promise.all(elements.map(element => page.evaluate(element => element.textContent, element))) as string[];
+    while (currentPage <= lastPage) {
+      const url = this.createURL(input, currentPage.toString())
+      
+      await page.goto(url.href)
+
+      const elements = await page.$$('dt');
+      const textContents = await Promise.all(elements.map(element => page.evaluate(element => element.textContent, element))) as string[];
+      words.push(...textContents)
+
+      const pagination = await page.$('.pagination')
+      if (pagination) {
+        const paginationItems = await pagination.$$('li')
+        
+        if (paginationItems.length > 1) {
+          const lastPagination = paginationItems[paginationItems!.length - 1]
+          const anchor = await lastPagination.$('a')
+          const href = await anchor!.getProperty('href')
+          const hrefValue = await href!.jsonValue()
+          const paginationUrl = new URLSearchParams(hrefValue)
+          lastPage = parseInt(paginationUrl.get('p') as string)
+        }
+      }
+      currentPage++
+    }
+
     await browser.close()
+    
+    storeWords(words)
 
-    storeWords(textContents)
-
-    return textContents
+    return words
   }
 
   async getLongestWord(input: string) {
@@ -63,7 +87,6 @@ export default class WordFinder {
     const hardStartSyllables = syllables.default.split(',') as string[]
 
     const hardest = words.find((word) => {
-      console.log(word, hardStartSyllables.some((syllable) => word.endsWith(syllable)))
       return hardStartSyllables.some((syllable) => word.endsWith(syllable))
     })
 
